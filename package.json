@@ -1,0 +1,56 @@
+{
+  "name": "@openmouse/controller-protocol",
+  "version": "0.1.0",
+  "description": "Game controller protocol codecs and drivers used by OpenMouse.",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CONTRIBUTING.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sony": {
+      "types": "./dist/sony/index.d.ts",
+      "import": "./dist/sony/index.js"
+    },
+    "./drivers": {
+      "types": "./dist/drivers/index.d.ts",
+      "import": "./dist/drivers/index.js"
+    },
+    "./drivers/*": {
+      "types": "./dist/drivers/*.d.ts",
+      "import": "./dist/drivers/*.js"
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "check": "npm run build && npm test && npm pack --dry-run",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "semantic-release": "25.0.9",
+    "tsx": "^4.23.11",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenMouse-Project/controller-protocol.git"
+  }
+}
