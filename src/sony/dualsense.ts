@@ -7,11 +7,20 @@
  * https://github.com/nondebug/dualsense and https://github.com/flok/pydualsense.
  * Bluetooth is not implemented here (its report carries one extra leading
  * byte plus a CRC32 trailer and hasn't been hardware-verified).
+ *
+ * DualSense Edge shares this same report layout, adding the L4/R4/L5/R5
+ * back-button bits in misc2 (see `isDualSenseEdge`), per pydualsense's
+ * `is_edge` handling. Only a standard DualSense has been hardware-tested
+ * here; the Edge bits are unverified against real Edge hardware.
  */
 
 export const DUALSENSE_VENDOR_ID = 0x054c;
 export const DUALSENSE_PRODUCT_ID = 0x0ce6;
 export const DUALSENSE_EDGE_PRODUCT_ID = 0x0df2;
+
+export function isDualSenseEdge(productId: number): boolean {
+  return productId === DUALSENSE_EDGE_PRODUCT_ID;
+}
 
 export const USB_INPUT_REPORT_ID = 0x01;
 export const USB_OUTPUT_REPORT_ID = 0x02;
@@ -75,6 +84,11 @@ export interface DualSenseButtons {
   ps: boolean;
   touchpad: boolean;
   mute: boolean;
+  /** DualSense Edge back buttons; undefined unless parsed with `isEdge: true`. */
+  l4?: boolean;
+  r4?: boolean;
+  l5?: boolean;
+  r5?: boolean;
 }
 
 export interface DualSenseTouchPoint {
@@ -115,7 +129,15 @@ function int16le(data: Uint8Array, offset: number): number {
  * Parses a 64-byte DualSense USB input report (report id 0x01, including the
  * leading report-id byte) into a structured state snapshot.
  */
-export function parseUsbInputReport(data: Uint8Array): DualSenseState {
+export interface ParseUsbInputReportOptions {
+  /** Set for a DualSense Edge to also decode the L4/R4/L5/R5 back buttons. */
+  isEdge?: boolean;
+}
+
+export function parseUsbInputReport(
+  data: Uint8Array,
+  options: ParseUsbInputReportOptions = {}
+): DualSenseState {
   if (data.length < USB_INPUT_REPORT_LENGTH) {
     throw new RangeError(
       `DualSense USB input report must be ${USB_INPUT_REPORT_LENGTH} bytes, got ${data.length}`
@@ -147,6 +169,14 @@ export function parseUsbInputReport(data: Uint8Array): DualSenseState {
     ps: (misc2 & 0x01) !== 0,
     touchpad: (misc2 & 0x02) !== 0,
     mute: (misc2 & 0x04) !== 0,
+    ...(options.isEdge
+      ? {
+          l4: (misc2 & 0x10) !== 0,
+          r4: (misc2 & 0x20) !== 0,
+          l5: (misc2 & 0x40) !== 0,
+          r5: (misc2 & 0x80) !== 0,
+        }
+      : {}),
   };
 
   const dpad = DPAD_DIRECTIONS[buttonByte & 0x0f] ?? "Neutral";

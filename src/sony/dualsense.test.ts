@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   buildUsbOutputReport,
+  DUALSENSE_EDGE_PRODUCT_ID,
   DUALSENSE_PRODUCT_ID,
   DUALSENSE_VENDOR_ID,
+  isDualSenseEdge,
   parseUsbInputReport,
   USB_INPUT_REPORT_LENGTH,
 } from "./dualsense.js";
@@ -48,6 +50,23 @@ test("parses a real idle USB input report", () => {
   // Wired and drawing power: charging, battery captured mid-charge.
   assert.equal(state.battery.state, "charging");
   assert.equal(state.battery.level, 55);
+});
+
+test("isDualSenseEdge distinguishes Edge from standard product id", () => {
+  assert.equal(isDualSenseEdge(DUALSENSE_EDGE_PRODUCT_ID), true);
+  assert.equal(isDualSenseEdge(DUALSENSE_PRODUCT_ID), false);
+});
+
+test("Edge back buttons are undefined unless parsed with isEdge", () => {
+  const report = fromHex(IDLE_REPORT_HEX);
+  const standard = parseUsbInputReport(report);
+  assert.equal(standard.buttons.l4, undefined);
+
+  const edge = parseUsbInputReport(report, { isEdge: true });
+  assert.equal(edge.buttons.l4, false);
+  assert.equal(edge.buttons.r4, false);
+  assert.equal(edge.buttons.l5, false);
+  assert.equal(edge.buttons.r5, false);
 });
 
 test("rejects reports shorter than a full USB input report", () => {
